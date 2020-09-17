@@ -30,20 +30,8 @@ const getUserWithEmail = function(email) {
       } 
       return null;
     });
-}
-    
+};
 
-  //   let user;
-//   for (const userId in users) {
-//     user = users[userId];
-//     if (user.email.toLowerCase() === email.toLowerCase()) {
-//       break;
-//     } else {
-//       user = null;
-//     }
-//   }
-//   return Promise.resolve(user);
-// }
 exports.getUserWithEmail = getUserWithEmail;
 
 /**
@@ -59,8 +47,7 @@ const getUserWithId = function(id) {
     } 
     return null;
   });
-  // return Promise.resolve(users[id]);
-}
+};
 exports.getUserWithId = getUserWithId;
 
 
@@ -73,14 +60,8 @@ const addUser =  function(user) {
   return pool.query ( 'INSERT INTO users (name, email, password) VALUES ( $1,$2,$3) RETURNING *;', [user.name, user.email, user.password] )
     .then ((response) => {
       return (response.rows[0])
-    })
-  
-
-  // const userId = Object.keys(users).length + 1;
-  // user.id = userId;
-  // users[userId] = user;
-  // return Promise.resolve(user);
-}
+    });
+};
 exports.addUser = addUser;
 
 /// Reservations
@@ -91,7 +72,21 @@ exports.addUser = addUser;
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function(guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+  return pool.query (`
+    SELECT reservations.id, properties.title, properties.cost_per_night, reservations.start_date, AVG(property_reviews.rating) AS average_rating, properties.number_of_bedrooms, properties.number_of_bathrooms,properties.parking_spaces, properties.thumbnail_photo_url
+    FROM reservations
+    JOIN properties ON reservations.property_id = properties.id
+    JOIN property_reviews ON property_reviews.reservation_id = reservations.id
+    WHERE reservations.guest_id = $1 AND reservations.end_date < now()::date
+    GROUP BY properties.id, reservations.id 
+    ORDER By reservations.start_date
+    LIMIT $2; `, [guest_id, limit])
+
+    .then (res => {
+      return res.rows
+    })
+  
+  // return getAllProperties(null, 2);
 }
 exports.getAllReservations = getAllReservations;
 
